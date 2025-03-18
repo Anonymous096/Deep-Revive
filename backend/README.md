@@ -66,3 +66,34 @@ gunicorn server:app
 - Uploads are stored in `uploads/` directory
 - Maximum file size: 16MB
 - Supported formats: PNG, JPG, JPEG, GIF
+
+3. Docker run commands:
+
+```bash
+# Build a new image
+docker build -t deeprevive-backend .
+
+# If after building it gives error of daemon while running, try this command first then run
+ docker rm deeprevive-backend
+ docker ps -a | grep deeprevive-back end # (OPTIONAL)
+
+# Run the container
+docker run -d \
+  --name deeprevive-backend \
+  -p 5001:5001 \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/enhanced:/app/enhanced \
+  deeprevive-backend
+
+# Check logs
+docker logs deeprevive-backend
+
+# To stop the docker container
+docker stop deeprevive-backend
+
+# Testing API endpoint
+curl http://localhost:5001/api/health
+
+# Check container status
+docker ps
+```

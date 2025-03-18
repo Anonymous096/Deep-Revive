@@ -3,15 +3,15 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
-from PIL import Image, ImageEnhance
 import numpy as np
 import cv2
 import torch
 from pathlib import Path
 import mimetypes
-import torch.nn as nn
-import torchvision.transforms as transforms
-import torchvision.transforms.functional as F
+from basicsr.utils import imwrite
+from gfpgan import GFPGANer
+from basicsr.archs.rrdbnet_arch import RRDBNet
+from realesrgan import RealESRGANer
 
 # Load environment variables
 load_dotenv()
@@ -30,15 +30,59 @@ CORS(app, resources={
 # Configure folders
 UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
 ENHANCED_FOLDER = Path(__file__).parent / 'enhanced'
+MODEL_PATH = Path(__file__).parent / 'experiments/pretrained/GFPGANv1.3.pth'
+REALESRGAN_MODEL_PATH = Path(__file__).parent / 'experiments/pretrained/RealESRGAN_x2plus.pth'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Create necessary folders
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 ENHANCED_FOLDER.mkdir(exist_ok=True)
+MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+# Download models if not exist
+if not MODEL_PATH.exists():
+    import wget
+    print('Downloading GFPGANv1.3 model...')
+    wget.download(
+        'https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth',
+        str(MODEL_PATH)
+    )
+
+if not REALESRGAN_MODEL_PATH.exists():
+    print('Downloading RealESRGAN model...')
+    wget.download(
+        'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
+        str(REALESRGAN_MODEL_PATH)
+    )
 
 app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
 app.config['ENHANCED_FOLDER'] = str(ENHANCED_FOLDER)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Initialize models
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Initialize background upsampler
+bg_upsampler = RealESRGANer(
+    scale=2,
+    model_path=str(REALESRGAN_MODEL_PATH),
+    model=RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2),
+    tile=400,
+    tile_pad=10,
+    pre_pad=0,
+    half=True if torch.cuda.is_available() else False,
+    device=device
+)
+
+# Initialize GFPGAN
+restorer = GFPGANer(
+    model_path=str(MODEL_PATH),
+    upscale=2,
+    arch='clean',
+    channel_multiplier=2,
+    bg_upsampler=bg_upsampler,
+    device=device
+)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -46,28 +90,6 @@ def allowed_file(filename):
 def get_mime_type(filepath):
     mime_type, _ = mimetypes.guess_type(filepath)
     return mime_type or 'application/octet-stream'
-
-def enhance_image_processing(image_path):
-    """Apply image enhancement"""
-    try:
-        # Read image using PIL
-        img = Image.open(str(image_path))
-        img = img.convert('RGB')
-        
-        # Apply basic image enhancement
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(1.5)  # Increase contrast
-        
-        enhancer = ImageEnhance.Sharpness(img)
-        img = enhancer.enhance(1.5)  # Increase sharpness
-        
-        enhancer = ImageEnhance.Color(img)
-        img = enhancer.enhance(1.2)  # Enhance color
-        
-        return img
-    except Exception as e:
-        print(f"Error in enhance_image_processing: {str(e)}")
-        raise
 
 @app.route('/')
 def index():
@@ -101,8 +123,8 @@ def upload_file():
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+        filepath = UPLOAD_FOLDER / filename
+        file.save(str(filepath))
         
         return jsonify({
             'message': 'File uploaded successfully',
@@ -113,78 +135,85 @@ def upload_file():
 
 @app.route('/api/enhance', methods=['POST'])
 def enhance_image():
-    """Enhance uploaded image"""
+    """Enhance image using GFPGAN"""
     data = request.get_json()
     filename = data.get('filename')
-    options = data.get('options', {})
     
     if not filename:
         return jsonify({'error': 'No filename provided'}), 400
     
-    input_path = Path(app.config['UPLOAD_FOLDER']) / filename
+    input_path = UPLOAD_FOLDER / filename
     if not input_path.exists():
         return jsonify({'error': 'File not found'}), 404
     
     try:
-        # Process the image
-        enhanced = enhance_image_processing(input_path)
+        # Read image
+        img = cv2.imread(str(input_path), cv2.IMREAD_COLOR)
+        if img is None:
+            return jsonify({'error': 'Failed to read image'}), 400
+
+        print(f'Processing: {filename}')
         
-        # Save enhanced image
-        enhanced_filename = f"enhanced_{filename}"
-        output_path = Path(app.config['ENHANCED_FOLDER']) / enhanced_filename
-        enhanced.save(str(output_path))
-        
-        return jsonify({
-            'message': 'Enhancement complete',
-            'filename': enhanced_filename
-        })
-        
+        try:
+            # Restore faces and background
+            cropped_faces, restored_faces, restored_img = restorer.enhance(
+                img,
+                has_aligned=False,
+                only_center_face=False,
+                paste_back=True
+            )
+
+            # Save restored image
+            enhanced_filename = f'enhanced_{filename}'
+            save_path = ENHANCED_FOLDER / enhanced_filename
+            imwrite(restored_img, str(save_path))
+
+            return jsonify({
+                'message': 'Enhancement complete',
+                'filename': enhanced_filename
+            })
+
+        except Exception as e:
+            print(f'GFPGAN inference error: {str(e)}')
+            return jsonify({'error': f'Enhancement failed: {str(e)}'}), 500
+
     except Exception as e:
+        print(f'Error processing image: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/preview/<filename>')
 def get_preview(filename):
-    """Get preview of image"""
+    """Preview enhanced image"""
     try:
         if filename.startswith('enhanced_'):
-            filepath = os.path.join(app.config['ENHANCED_FOLDER'], filename)
+            filepath = ENHANCED_FOLDER / filename
         else:
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
-        if not os.path.exists(filepath):
+            filepath = UPLOAD_FOLDER / filename
+
+        if not filepath.exists():
             return jsonify({'error': 'File not found'}), 404
 
-        # Read the image file
-        with open(filepath, 'rb') as f:
-            image_data = f.read()
+        # Read with OpenCV and convert to RGB
+        img = cv2.imread(str(filepath))
         
         # Create response with proper mime type
-        response = Response(image_data, content_type=get_mime_type(filepath))
-        response.headers['Cache-Control'] = 'public, max-age=31536000'
-        response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+        _, img_encoded = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 100])
+        response = Response(img_encoded.tobytes(), content_type=get_mime_type(filepath))
+        response.headers['Cache-Control'] = 'no-cache'
         return response
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Preview error: {str(e)}")
+        return jsonify({'error': 'Failed to load image'}), 500
 
 @app.route('/api/download/<filename>')
 def download_file(filename):
     """Download enhanced image"""
-    if not filename.startswith('enhanced_'):
-        filename = f"enhanced_{filename}"
-    
-    filepath = os.path.join(app.config['ENHANCED_FOLDER'], filename)
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'Enhanced file not found'}), 404
-    
-    try:
-        return send_file(
-            filepath,
-            as_attachment=True,
-            download_name=filename
-        )
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    filepath = ENHANCED_FOLDER / filename
+    if not filepath.exists():
+        return jsonify({'error': 'File not found'}), 404
+
+    return send_file(str(filepath), as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
