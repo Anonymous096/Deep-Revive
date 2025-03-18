@@ -8,7 +8,7 @@ export function HeroScrollDemo() {
     <div className="flex flex-col overflow-hidden">
       <ContainerScroll>
         <Image
-          src={`/Dashboard.png`}
+          src={`/revive_dashboard.png`}
           alt="hero"
           height={720}
           width={1400}
