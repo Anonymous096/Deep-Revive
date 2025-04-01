@@ -134,7 +134,7 @@ export const SkeletonThree = () => {
   return (
     // Fireship youtube video jpeg
     <Link
-      href="https://www.youtube.com/watch?v=RPa3_AD1_Vs"
+      href="https://www.youtube.com/"
       target="__blank"
       className="relative flex gap-10  h-full group/image"
     >

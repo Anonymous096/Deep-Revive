@@ -1,10 +1,10 @@
 "use client";
 import React from "react";
 
-import POV from "@/public/pov.png";
-import Ride from "@/public/ride.png";
-import SF from "@/public/sf.png";
-import Goats from "@/public/goats.png";
+import POV from "@/public/00_00.png";
+import Ride from "@/public/10045_02.png";
+import SF from "@/public/Blake_Lively_00.png";
+import Goats from "@/public/Blake_Lively_01.png";
 import { LayoutGrid } from "./ui/layout-grid";
 
 export function HeroImages() {
@@ -94,13 +94,13 @@ const cards = [
     id: 3,
     content: <SkeletonThree />,
     className: "col-span-1",
-    thumbnail: Goats,
+    thumbnail: SF,
   },
 
   {
     id: 4,
     content: <SkeletonFour />,
     className: "md:col-span-2",
-    thumbnail: SF,
+    thumbnail: Goats,
   },
 ];

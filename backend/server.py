@@ -17,10 +17,14 @@ from realesrgan import RealESRGANer
 load_dotenv()
 
 app = Flask(__name__)
-# Configure CORS to allow image loading
+# Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3000"],
+        "origins": [
+            "http://localhost:3000",  # Local development
+            "https://*.vercel.app",    # Vercel deployment domains
+            os.getenv('FRONTEND_URL', '')  # Custom domain if configured
+        ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"],
         "expose_headers": ["Content-Disposition"]
@@ -37,23 +41,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 # Create necessary folders
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 ENHANCED_FOLDER.mkdir(exist_ok=True)
-MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-# Download models if not exist
-if not MODEL_PATH.exists():
-    import wget
-    print('Downloading GFPGANv1.3 model...')
-    wget.download(
-        'https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth',
-        str(MODEL_PATH)
-    )
-
-if not REALESRGAN_MODEL_PATH.exists():
-    print('Downloading RealESRGAN model...')
-    wget.download(
-        'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
-        str(REALESRGAN_MODEL_PATH)
-    )
 
 app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
 app.config['ENHANCED_FOLDER'] = str(ENHANCED_FOLDER)
@@ -61,8 +48,10 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Initialize models
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using device: {device}")
 
 # Initialize background upsampler
+print("Initializing RealESRGAN...")
 bg_upsampler = RealESRGANer(
     scale=2,
     model_path=str(REALESRGAN_MODEL_PATH),
@@ -75,6 +64,7 @@ bg_upsampler = RealESRGANer(
 )
 
 # Initialize GFPGAN
+print("Initializing GFPGAN...")
 restorer = GFPGANer(
     model_path=str(MODEL_PATH),
     upscale=2,
@@ -83,6 +73,8 @@ restorer = GFPGANer(
     bg_upsampler=bg_upsampler,
     device=device
 )
+
+print("All models initialized successfully!")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

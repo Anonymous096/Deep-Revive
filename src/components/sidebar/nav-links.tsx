@@ -9,7 +9,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavMain } from "./nav-main";
-import { NavProjects } from "./nav-projects";
 import { NavSecondary } from "./nav-secondary";
 
 const data = {
@@ -27,18 +26,6 @@ const data = {
     {
       title: "Settings",
       url: "/dashboard/settings",
-      icon: Command,
-    },
-  ],
-  projects: [
-    {
-      name: "Project 1",
-      url: "/dashboard/project/1",
-      icon: Command,
-    },
-    {
-      name: "Project 2",
-      url: "/dashboard/project/2",
       icon: Command,
     },
   ],
@@ -78,7 +65,6 @@ export function NavLinks() {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
     </>

@@ -77,13 +77,8 @@ docker build -t deeprevive-backend .
  docker rm deeprevive-backend
  docker ps -a | grep deeprevive-back end # (OPTIONAL)
 
-# Run the container
-docker run -d \
-  --name deeprevive-backend \
-  -p 5001:5001 \
-  -v $(pwd)/uploads:/app/uploads \
-  -v $(pwd)/enhanced:/app/enhanced \
-  deeprevive-backend
+# Run docker container
+docker run -it -p 5001:5001 deeprevive-backend
 
 # Check logs
 docker logs deeprevive-backend
@@ -96,4 +91,12 @@ curl http://localhost:5001/api/health
 
 # Check container status
 docker ps
+
+# Stop any running containers
+docker stop $(docker ps -a -q)
+
+# Remove old containers and images
+# After removing start with build then run
+docker rm $(docker ps -a -q)
+docker rmi deeprevive-backend
 ```
