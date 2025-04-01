@@ -152,6 +152,7 @@ docker build -t deeprevive-backend .
 3. Run the container:
 
 ```bash
+# Before running the container make sure to activate virtual env in the backend folder and install every required dependencies
 docker run -it -p 5001:5001 deeprevive-backend
 ```
 
