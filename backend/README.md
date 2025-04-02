@@ -78,7 +78,7 @@ docker build -t deeprevive-backend .
  docker ps -a | grep deeprevive-back end # (OPTIONAL)
 
 # Run docker container
-docker run -it -p 5001:5001 deeprevive-backend
+docker run -it -p 10000:10000 deeprevive-backend
 
 # Check logs
 docker logs deeprevive-backend

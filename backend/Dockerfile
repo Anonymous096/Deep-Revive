@@ -30,13 +30,16 @@ RUN wget https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.
 COPY . .
 
 # Expose port
-EXPOSE 5001
+EXPOSE 10000
 
 # Set environment variables
 ENV FLASK_APP=server.py
 ENV FLASK_ENV=production
-ENV PORT=5001
+ENV PORT=10000
 ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore::UserWarning"
+ENV PYTHONUNBUFFERED=1
+ENV MPLCONFIGDIR=/tmp
+ENV CUDA_VISIBLE_DEVICES=""
 
-# Run the application with warnings filtered
-CMD ["python", "-W", "ignore", "server.py"] 
+# Run the application with memory optimization
+CMD ["python", "-W", "ignore", "-O", "server.py"] 

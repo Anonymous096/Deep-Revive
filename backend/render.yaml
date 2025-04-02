@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: deeprevive-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: FLASK_APP
+        value: server.py
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: MPLCONFIGDIR
+        value: /tmp
+      - key: CUDA_VISIBLE_DEVICES
+        value: ""
+    healthCheckPath: /api/health
+    autoDeploy: true
+    plan: free
+    disk:
+      name: data
+      mountPath: /app/uploads
+      sizeGB: 1

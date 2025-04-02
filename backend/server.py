@@ -12,6 +12,7 @@ from basicsr.utils import imwrite
 from gfpgan import GFPGANer
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
+import gc
 
 # Load environment variables
 load_dotenv()
@@ -208,5 +209,5 @@ def download_file(filename):
     return send_file(str(filepath), as_attachment=True)
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=True) 
+    port = int(os.getenv('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False) 
