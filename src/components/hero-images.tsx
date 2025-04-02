@@ -39,8 +39,9 @@ const SkeletonThree = () => {
       </p>
       <p className="font-normal text-base text-white"></p>
       <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Hey, it's Rexan! I'm the creator of this website and I'm so glad you're
-        here. I got the inspiration to build this app from Daniel's thumbnails.
+        Hey, it&apos;s Rexan! I&apos;m the creator of this website and I&apos;m
+        so glad you&apos;re here. I got the inspiration to build this app from
+        Daniel&apos;s thumbnails.
       </p>
     </div>
   );

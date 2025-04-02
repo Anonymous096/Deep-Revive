@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Upload, X } from "lucide-react";
 
 interface FileUploadProps {

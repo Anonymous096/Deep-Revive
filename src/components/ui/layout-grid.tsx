@@ -1,8 +1,8 @@
 "use client";
-import React, { forwardRef, JSX, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { useState, JSX } from "react";
+import { motion } from "framer-motion";
+import Image, { StaticImageData } from "next/image";
 import { cn } from "@/lib/utils";
-import Image, { ImageProps, StaticImageData } from "next/image";
 
 type Card = {
   id: number;
@@ -60,18 +60,14 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
 };
 
 const ImageComponent = ({ card }: { card: Card }) => {
-  const MotionImage = motion.create(
-    forwardRef<HTMLImageElement, ImageProps>((props, ref) => (
-      <Image {...props} ref={ref} />
-    ))
-  );
+  const MotionImage = motion(Image);
 
   return (
     <MotionImage
       layoutId={`image-${card.id}-image`}
       src={
         typeof card.thumbnail === "string" ? card.thumbnail : card.thumbnail.src
-      } // Handle both types
+      }
       height="500"
       width="500"
       className={cn(

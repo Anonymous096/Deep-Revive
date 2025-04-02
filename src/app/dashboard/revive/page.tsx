@@ -1,14 +1,9 @@
 "use client";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem } from "@/components/ui/breadcrumb";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ChevronRight, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { FileUpload } from "@/components/file-upload";
@@ -16,8 +11,6 @@ import { uploadImage, enhanceImage, getPreviewUrl } from "@/services/api";
 import Image from "next/image";
 
 export default function Revive() {
-  const pathname = usePathname();
-  const [files, setFiles] = useState<File[]>([]);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [enhancedImage, setEnhancedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,10 +94,11 @@ export default function Revive() {
           </p>
           {uploadedFile && !isLoading && (
             <div className="aspect-video relative rounded-lg overflow-hidden bg-muted h-48">
-              <img
+              <Image
                 src={getPreviewUrl(uploadedFile)}
                 alt="Original"
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                fill
+                style={{ objectFit: "contain" }}
               />
             </div>
           )}
@@ -123,14 +117,11 @@ export default function Revive() {
           {enhancedImage && !isLoading && (
             <>
               <div className="aspect-video relative rounded-lg overflow-hidden bg-muted h-48">
-                <img
+                <Image
                   src={getPreviewUrl(enhancedImage)}
                   alt="Enhanced"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
+                  fill
+                  style={{ objectFit: "contain" }}
                 />
               </div>
               <Button

@@ -17,11 +17,11 @@ async function checkApiAvailability() {
 }
 
 // Helper function to retry failed requests
-async function retryRequest(
-  fn: () => Promise<any>,
+async function retryRequest<T>(
+  fn: () => Promise<T>,
   maxRetries = 3,
   delay = 1000
-) {
+): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -31,9 +31,14 @@ async function retryRequest(
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
+  throw new Error("Max retries reached");
 }
 
-export async function uploadImage(file: File) {
+interface ApiResponse {
+  filename: string;
+}
+
+export async function uploadImage(file: File): Promise<ApiResponse> {
   try {
     const isAvailable = await checkApiAvailability();
     if (!isAvailable) {
@@ -56,7 +61,7 @@ export async function uploadImage(file: File) {
         throw new Error(errorData.error || "Failed to upload image");
       }
 
-      return response.json();
+      return response.json() as Promise<ApiResponse>;
     });
   } catch (error) {
     console.error("Upload error:", error);
@@ -64,7 +69,10 @@ export async function uploadImage(file: File) {
   }
 }
 
-export async function enhanceImage(filename: string, options = {}) {
+export async function enhanceImage(
+  filename: string,
+  options = {}
+): Promise<ApiResponse> {
   try {
     const isAvailable = await checkApiAvailability();
     if (!isAvailable) {
@@ -87,7 +95,7 @@ export async function enhanceImage(filename: string, options = {}) {
         throw new Error(errorData.error || "Failed to enhance image");
       }
 
-      return response.json();
+      return response.json() as Promise<ApiResponse>;
     });
   } catch (error) {
     console.error("Enhancement error:", error);

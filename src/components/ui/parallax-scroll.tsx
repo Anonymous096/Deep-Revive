@@ -12,7 +12,7 @@ export const ParallaxScroll = ({
   images: string[] | StaticImageData[];
   className?: string;
 }) => {
-  const gridRef = useRef<any>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({});
 
   const translateFirst = useTransform(scrollYProgress, [0, 1], [0, -200]);
