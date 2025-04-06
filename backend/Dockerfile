@@ -42,4 +42,5 @@ ENV MPLCONFIGDIR=/tmp
 ENV CUDA_VISIBLE_DEVICES=""
 
 # Run the application with memory optimization
+# python server.py
 CMD ["python", "-W", "ignore", "-O", "server.py"] 
