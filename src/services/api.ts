@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:10000";
+const API_BASE_URL = "http://localhost:8080";
 
 // Helper function to check if the API is available
 async function checkApiAvailability() {

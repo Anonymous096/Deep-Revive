@@ -30,12 +30,12 @@ RUN wget https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.
 COPY . .
 
 # Expose port
-EXPOSE 10000
+EXPOSE 8080
 
 # Set environment variables
 ENV FLASK_APP=server.py
 ENV FLASK_ENV=production
-ENV PORT=10000
+ENV PORT=8080
 ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore::UserWarning"
 ENV PYTHONUNBUFFERED=1
 ENV MPLCONFIGDIR=/tmp
