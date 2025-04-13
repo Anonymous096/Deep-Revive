@@ -22,15 +22,10 @@ app = Flask(__name__)
 # Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            "http://localhost:3000",  # Local development
-            "https://deep-revive.vercel.app",    # Vercel deployment domains
-            os.getenv('FRONTEND_URL', ''),  # Custom domain if configured
-            "*"  # Allow all origins for testing
-        ],
+        "origins": "*",
         "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-        "allow_headers": ["*", "Content-Type", "Accept", "Authorization", "X-Requested-With"],
-        "expose_headers": ["Content-Disposition"],
+        "allow_headers": "*",
+        "expose_headers": "*",
         "supports_credentials": True,
         "max_age": 3600
     }
@@ -40,7 +35,7 @@ CORS(app, resources={
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Headers', '*')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
