@@ -24,12 +24,12 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:3000",  # Local development
-            "https://*.vercel.app",    # Vercel deployment domains
+            "https://deep-revive.vercel.app",    # Vercel deployment domains
             os.getenv('FRONTEND_URL', ''),  # Custom domain if configured
             "*"  # Allow all origins for testing
         ],
         "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-        "allow_headers": ["Content-Type", "Accept", "Authorization", "X-Requested-With"],
+        "allow_headers": ["*", "Content-Type", "Accept", "Authorization", "X-Requested-With"],
         "expose_headers": ["Content-Disposition"],
         "supports_credentials": True,
         "max_age": 3600
