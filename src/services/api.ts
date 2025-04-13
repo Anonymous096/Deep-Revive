@@ -5,6 +5,7 @@ async function checkApiAvailability() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/health`, {
       method: "GET",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },

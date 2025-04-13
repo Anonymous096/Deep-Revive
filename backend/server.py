@@ -24,11 +24,13 @@ CORS(app, resources={
         "origins": [
             "http://localhost:3000",  # Local development
             "https://*.vercel.app",    # Vercel deployment domains
-            os.getenv('FRONTEND_URL', '')  # Custom domain if configured
+            os.getenv('FRONTEND_URL', ''),  # Custom domain if configured
+            "*"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "expose_headers": ["Content-Disposition"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Disposition"],
+        "supports_credentials": True
     }
 })
 
