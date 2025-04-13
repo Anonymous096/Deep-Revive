@@ -1,0 +1,39 @@
+steps:
+  # Build the container image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/$deep-revive/deeprevive-backend", "."]
+
+  # Push the container image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/$deep-revive/deeprevive-backend"]
+
+  # Deploy container image to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "deepimg-794052010786"
+      - "--image"
+      - "gcr.io/$deep-revive/deeprevive-backend"
+      - "--region"
+      - "europe-west4"
+      - "--platform"
+      - "managed"
+      - "--allow-unauthenticated"
+      - "--memory"
+      - "2Gi"
+      - "--cpu"
+      - "1"
+      - "--min-instances"
+      - "0"
+      - "--max-instances"
+      - "1"
+      - "--port"
+      - "8080"
+
+images:
+  - "gcr.io/$deep-revive/deeprevive-backend"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
