@@ -22,10 +22,14 @@ app = Flask(__name__)
 # Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
     r"/*": {
-        "origins": "*",
+        "origins": [
+            "http://localhost:3000",  # Local development
+            "https://deep-revive.vercel.app",  # Your Vercel deployment
+            "https://*.vercel.app"    # All Vercel deployments
+        ],
         "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-        "allow_headers": "*",
-        "expose_headers": "*",
+        "allow_headers": ["Content-Type", "Accept", "Authorization", "X-Requested-With"],
+        "expose_headers": ["Content-Disposition"],
         "supports_credentials": True,
         "max_age": 3600
     }
@@ -34,8 +38,10 @@ CORS(app, resources={
 # Add CORS headers to all responses
 @app.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', '*')
+    origin = request.headers.get('Origin')
+    if origin in ["http://localhost:3000", "https://deep-revive.vercel.app", "https://*.vercel.app"]:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
