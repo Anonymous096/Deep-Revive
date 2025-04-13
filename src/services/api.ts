@@ -5,9 +5,11 @@ async function checkApiAvailability() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/health`, {
       method: "GET",
+      mode: "cors",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
     });
     return response.ok;
@@ -48,44 +50,27 @@ export async function uploadImage(file: File): Promise<ApiResponse> {
       );
     }
 
-    return await retryRequest(
-      async () => {
-        const formData = new FormData();
-        formData.append("file", file);
+    return await retryRequest(async () => {
+      const formData = new FormData();
+      formData.append("file", file);
 
-        console.log("Uploading to:", `${API_BASE_URL}/api/upload`);
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      });
 
-        const response = await fetch(`${API_BASE_URL}/api/upload`, {
-          method: "POST",
-          body: formData,
-          headers: {
-            // Don't set Content-Type header when sending FormData
-            // Let the browser set it with the correct boundary
-            Accept: "application/json",
-          },
-          credentials: "include",
-        });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to upload image");
+      }
 
-        console.log("Upload response status:", response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Upload error response:", errorText);
-          try {
-            const errorData = JSON.parse(errorText);
-            throw new Error(errorData.error || "Failed to upload image");
-          } catch (e) {
-            throw new Error(`Failed to upload image: ${errorText}`);
-          }
-        }
-
-        const data = await response.json();
-        console.log("Upload response data:", data);
-        return data;
-      },
-      3,
-      2000
-    ); // Increase retry delay to 2 seconds
+      return response.json() as Promise<ApiResponse>;
+    });
   } catch (error) {
     console.error("Upload error:", error);
     throw error;

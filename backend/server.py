@@ -21,20 +21,29 @@ load_dotenv()
 app = Flask(__name__)
 # Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
-    r"/api/*": {
+    r"/*": {
         "origins": [
             "http://localhost:3000",  # Local development
             "https://*.vercel.app",    # Vercel deployment domains
             os.getenv('FRONTEND_URL', ''),  # Custom domain if configured
-            "*"
+            "*"  # Allow all origins for testing
         ],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
+        "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Accept", "Authorization", "X-Requested-With"],
         "expose_headers": ["Content-Disposition"],
         "supports_credentials": True,
         "max_age": 3600
     }
 })
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 # Configure folders
 UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
