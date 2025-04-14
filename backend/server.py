@@ -46,6 +46,22 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
+# Add OPTIONS handler for preflight requests
+@app.route('/api/health', methods=['OPTIONS'])
+@app.route('/api/upload', methods=['OPTIONS'])
+@app.route('/api/enhance', methods=['OPTIONS'])
+@app.route('/api/preview/<filename>', methods=['OPTIONS'])
+@app.route('/api/download/<filename>', methods=['OPTIONS'])
+def handle_options():
+    response = app.make_default_options_response()
+    origin = request.headers.get('Origin')
+    if origin in ["http://localhost:3000", "https://deep-revive.vercel.app", "https://*.vercel.app"]:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
 # Configure folders
 UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
 ENHANCED_FOLDER = Path(__file__).parent / 'enhanced'
