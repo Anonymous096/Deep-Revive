@@ -71,6 +71,7 @@ async function retryRequest<T>(
 
 interface ApiResponse {
   filename: string;
+  message: string;
 }
 
 export async function enhanceImage(
