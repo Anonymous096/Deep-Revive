@@ -43,4 +43,5 @@ ENV CUDA_VISIBLE_DEVICES=""
 
 # Run the application with memory optimization
 # python server.py
-CMD ["python", "-W", "ignore", "-O", "server.py"] 
+# CMD ["python", "-W", "ignore", "-O", "server.py"] 
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "server:app"]
