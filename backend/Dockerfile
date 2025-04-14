@@ -41,6 +41,7 @@ ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore::UserWarning"
 ENV PYTHONUNBUFFERED=1
 ENV MPLCONFIGDIR=/tmp
 ENV CUDA_VISIBLE_DEVICES=""
+ENV FRONTEND_URL="https://deep-revive.vercel.app"
 
 # Run the application with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "server:app"] 
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "--access-logfile", "-", "--error-logfile", "-", "server:app"] 

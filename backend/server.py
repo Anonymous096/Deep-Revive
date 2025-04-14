@@ -24,11 +24,10 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:3000",  # Local development
-            "https://deep-revive.vercel.app",  # Your Vercel deployment
-            "https://*.vercel.app"    # All Vercel deployments
+            "https://deep-revive.vercel.app"  # Your Vercel deployment
         ],
-        "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-        "allow_headers": ["Content-Type", "Accept", "Authorization", "X-Requested-With"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Accept"],
         "expose_headers": ["Content-Disposition"],
         "supports_credentials": True,
         "max_age": 3600

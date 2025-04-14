@@ -1,39 +1,73 @@
-steps:
-  # Build the container image
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$deep-revive/deeprevive-backend", "."]
-
-  # Push the container image to Container Registry
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$deep-revive/deeprevive-backend"]
-
-  # Deploy container image to Cloud Run
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: gcloud
-    args:
-      - "run"
-      - "deploy"
-      - "deepimg-794052010786"
-      - "--image"
-      - "gcr.io/$deep-revive/deeprevive-backend"
-      - "--region"
-      - "europe-west4"
-      - "--platform"
-      - "managed"
-      - "--allow-unauthenticated"
-      - "--memory"
-      - "2Gi"
-      - "--cpu"
-      - "1"
-      - "--min-instances"
-      - "0"
-      - "--max-instances"
-      - "1"
-      - "--port"
-      - "8080"
-
-images:
-  - "gcr.io/$deep-revive/deeprevive-backend"
-
-options:
-  logging: CLOUD_LOGGING_ONLY
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: deepimgre
+  namespace: "794052010786"
+  selfLink: /apis/serving.knative.dev/v1/namespaces/794052010786/services/deepimgre
+  uid: 07b1221c-cc1d-4167-973a-0e92fe76c662
+  resourceVersion: AAYysw73qp0
+  generation: 1
+  creationTimestamp: "2025-04-14T01:33:46.907595Z"
+  labels:
+    cloud.googleapis.com/location: europe-west4
+  annotations:
+    run.googleapis.com/client-name: cloud-console
+    serving.knative.dev/creator: teambuzedge@gmail.com
+    serving.knative.dev/lastModifier: teambuzedge@gmail.com
+    run.googleapis.com/operation-id: 462b5828-bd6a-4ee1-b1ab-58da9a7e3940
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/urls: '["https://deepimgre-794052010786.europe-west4.run.app","https://deepimgre-ycdo74qbia-ez.a.run.app"]'
+spec:
+  template:
+    metadata:
+      labels:
+        run.googleapis.com/startupProbeType: Default
+      annotations:
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/client-name: cloud-console
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 600
+      serviceAccountName: 794052010786-compute@developer.gserviceaccount.com
+      containers:
+        - name: deepimg-1
+          image: europe-west4-docker.pkg.dev/deep-revive/deepre/deepimg@sha256:c8e87eca006549332cb357da8b083ee2da34b7a8a535fbfe3e9709c22711bf73
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          startupProbe:
+            timeoutSeconds: 240
+            periodSeconds: 240
+            failureThreshold: 1
+            tcpSocket:
+              port: 8080
+  traffic:
+    - percent: 100
+      latestRevision: true
+status:
+  observedGeneration: 1
+  conditions:
+    - type: Ready
+      status: "True"
+      lastTransitionTime: "2025-04-14T01:34:51.910813Z"
+    - type: ConfigurationsReady
+      status: "True"
+      lastTransitionTime: "2025-04-14T01:34:50.684110Z"
+    - type: RoutesReady
+      status: "True"
+      lastTransitionTime: "2025-04-14T01:34:51.882688Z"
+  latestReadyRevisionName: deepimgre-00001-z4k
+  latestCreatedRevisionName: deepimgre-00001-z4k
+  traffic:
+    - revisionName: deepimgre-00001-z4k
+      percent: 100
+      latestRevision: true
+  url: https://deepimgre-ycdo74qbia-ez.a.run.app
+  address:
+    url: https://deepimgre-ycdo74qbia-ez.a.run.app
