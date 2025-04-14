@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronRight, Download, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { FileUpload } from "@/components/file-upload";
 import { uploadImage, enhanceImage, getPreviewUrl } from "@/services/api";
 import Image from "next/image";
@@ -15,6 +15,16 @@ export default function Revive() {
   const [enhancedImage, setEnhancedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewImge, setPreviewImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPreviewImage = async () => {
+      if (uploadedFile) {
+        setPreviewImage(await getPreviewUrl(uploadedFile));
+      }
+    };
+    fetchPreviewImage();
+  }, [uploadedFile]);
 
   const handleFileUpload = async (files: File[]) => {
     if (files.length === 0) return;
@@ -95,7 +105,7 @@ export default function Revive() {
           {uploadedFile && !isLoading && (
             <div className="aspect-video relative rounded-lg overflow-hidden bg-muted h-48">
               <Image
-                src={getPreviewUrl(uploadedFile)}
+                src={previewImge ?? ""}
                 alt="Original"
                 fill
                 style={{ objectFit: "contain" }}
@@ -118,7 +128,7 @@ export default function Revive() {
             <>
               <div className="aspect-video relative rounded-lg overflow-hidden bg-muted h-48">
                 <Image
-                  src={getPreviewUrl(enhancedImage)}
+                  src={previewImge ?? ""}
                   alt="Enhanced"
                   fill
                   style={{ objectFit: "contain" }}
