@@ -1,5 +1,3 @@
-"use server";
-
 // API base URL - use environment variable if available, otherwise fallback to localhost
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -113,7 +111,7 @@ export async function enhanceImage(
   }
 }
 
-export async function getPreviewUrl(filename: string) {
+export function getPreviewUrl(filename: string) {
   // Add timestamp to prevent browser caching
   return `${API_BASE_URL}/api/preview/${filename}?t=${Date.now()}`;
 }
