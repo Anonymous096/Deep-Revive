@@ -113,7 +113,7 @@ export async function enhanceImage(
   }
 }
 
-export function getPreviewUrl(filename: string) {
+export async function getPreviewUrl(filename: string) {
   // Add timestamp to prevent browser caching
   return `${API_BASE_URL}/api/preview/${filename}?t=${Date.now()}`;
 }
