@@ -1,3 +1,5 @@
+"use server";
+
 // API base URL - use environment variable if available, otherwise fallback to localhost
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
