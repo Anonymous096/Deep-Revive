@@ -30,17 +30,17 @@ RUN wget https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.
 COPY . .
 
 # Expose port
-EXPOSE 8080
+EXPOSE 10000
 
 # Set environment variables
 ENV FLASK_APP=server.py
 ENV FLASK_ENV=production
-ENV PORT=8080
+ENV PORT=10000
 ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore::UserWarning"
 ENV PYTHONUNBUFFERED=1
 ENV MPLCONFIGDIR=/tmp
 ENV CUDA_VISIBLE_DEVICES=""
-ENV FRONTEND_URL="https://deep-revive.vercel.app"
 
-# Run the application with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "server:app"] 
+# Run the application with memory optimization
+# python server.py
+CMD ["python", "-W", "ignore", "-O", "server.py"] 

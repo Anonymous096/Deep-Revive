@@ -13,7 +13,6 @@ from gfpgan import GFPGANer
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
 import gc
-import os
 
 # Load environment variables
 load_dotenv()
@@ -21,13 +20,15 @@ load_dotenv()
 app = Flask(__name__)
 # Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
-    r"/*": {
-        "origins": "*",
-        "methods": ["*"],
-        "allow_headers": ["*"],
-        "expose_headers": ["*"],
-        "supports_credentials": True,
-        "max_age": 3600
+    r"/api/*": {
+        "origins": [
+            "http://localhost:3000",  # Local development
+            "https://*.vercel.app",    # Vercel deployment domains
+            os.getenv('FRONTEND_URL', '')  # Custom domain if configured
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "expose_headers": ["Content-Disposition"]
     }
 })
 
@@ -98,88 +99,32 @@ def index():
         }
     })
 
-# Set permissions for upload and enhanced folders
-def ensure_directory_permissions():
-    """Ensure upload and enhanced directories exist and have correct permissions"""
-    try:
-        for directory in [UPLOAD_FOLDER, ENHANCED_FOLDER]:
-            directory.mkdir(exist_ok=True)
-            # Make directory writable
-            os.chmod(str(directory), 0o777)
-        print("Directory permissions set successfully")
-    except Exception as e:
-        print(f"Error setting directory permissions: {str(e)}")
-
-# Call this function when the server starts
-ensure_directory_permissions()
-
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
-    try:
-        # Check if directories are writable
-        test_file_path = UPLOAD_FOLDER / '.test'
-        test_file_path.touch()
-        test_file_path.unlink()
-        
-        return jsonify({
-            'status': 'healthy',
-            'upload_dir': str(UPLOAD_FOLDER),
-            'upload_dir_writable': True,
-            'enhanced_dir': str(ENHANCED_FOLDER),
-            'enhanced_dir_writable': True
-        })
-    except Exception as e:
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e)
-        }), 500
-    
+    return jsonify({'status': 'healthy'})
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     """Handle image upload"""
-    try:
-        print("Received upload request")
-        print("Files in request:", request.files)
-        print("Content-Type:", request.headers.get('Content-Type'))
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        filepath = UPLOAD_FOLDER / filename
+        file.save(str(filepath))
         
-        if 'file' not in request.files:
-            print("No file part in request")
-            return jsonify({'error': 'No file part'}), 400
-        
-        file = request.files['file']
-        print("Received file:", file.filename)
-        
-        if file.filename == '':
-            print("No selected file")
-            return jsonify({'error': 'No selected file'}), 400
-        
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = UPLOAD_FOLDER / filename
-            print(f"Saving file to: {filepath}")
-            
-            # Ensure upload directory exists
-            UPLOAD_FOLDER.mkdir(exist_ok=True)
-            
-            try:
-                file.save(str(filepath))
-                print("File saved successfully")
-                
-                return jsonify({
-                    'message': 'File uploaded successfully',
-                    'filename': filename
-                })
-            except Exception as e:
-                print(f"Error saving file: {str(e)}")
-                return jsonify({'error': f'Failed to save file: {str(e)}'}), 500
-        else:
-            print(f"Invalid file type: {file.filename}")
-            return jsonify({'error': 'File type not allowed'}), 400
-            
-    except Exception as e:
-        print(f"Unexpected error in upload: {str(e)}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({
+            'message': 'File uploaded successfully',
+            'filename': filename
+        })
+    
+    return jsonify({'error': 'File type not allowed'}), 400
 
 @app.route('/api/enhance', methods=['POST'])
 def enhance_image():
@@ -264,5 +209,5 @@ def download_file(filename):
     return send_file(str(filepath), as_attachment=True)
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8080))
+    port = int(os.getenv('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False) 
