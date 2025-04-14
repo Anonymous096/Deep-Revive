@@ -22,7 +22,7 @@ app = Flask(__name__)
 # Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
     r"/*": {
-        "origins": "https://deep-revive.vercel.app",
+        "origins": "*",
         "methods": ["*"],
         "allow_headers": ["*"],
         "expose_headers": ["*"],
