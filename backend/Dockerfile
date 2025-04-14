@@ -17,6 +17,7 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install gunicorn
 
 # Create necessary directories
 RUN mkdir -p uploads enhanced experiments/pretrained gfpgan/weights
@@ -41,6 +42,5 @@ ENV PYTHONUNBUFFERED=1
 ENV MPLCONFIGDIR=/tmp
 ENV CUDA_VISIBLE_DEVICES=""
 
-# Run the application with memory optimization
-# python server.py
-CMD ["python", "server.py"] 
+# Run the application with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "server:app"] 
