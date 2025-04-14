@@ -23,9 +23,9 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
         "origins": "https://deep-revive.vercel.app",
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Accept"],
-        "expose_headers": ["Content-Disposition"],
+        "methods": ["*"],
+        "allow_headers": ["*"],
+        "expose_headers": ["*"],
         "supports_credentials": True,
         "max_age": 3600
     }
