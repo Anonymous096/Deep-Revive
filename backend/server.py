@@ -264,7 +264,5 @@ def download_file(filename):
     return send_file(str(filepath), as_attachment=True)
 
 if __name__ == '__main__':
-    # This block will only run when the script is executed directly
-    # Not when imported as a module (which is what gunicorn does)
     port = int(os.getenv('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False) 
