@@ -47,7 +47,7 @@ export default function Revive() {
 
     // Create download link
     const link = document.createElement("a");
-    link.href = `http://localhost:10000/api/download/${enhancedImage}`;
+    link.href = `http://0.0.0.0:8080/api/download/${enhancedImage}`;
     link.download = enhancedImage;
     document.body.appendChild(link);
     link.click();

@@ -17,6 +17,7 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install gunicorn
 
 # Create necessary directories
 RUN mkdir -p uploads enhanced experiments/pretrained gfpgan/weights
@@ -30,12 +31,12 @@ RUN wget https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.
 COPY . .
 
 # Expose port
-EXPOSE 10000
+EXPOSE 8080
 
 # Set environment variables
 ENV FLASK_APP=server.py
 ENV FLASK_ENV=production
-ENV PORT=10000
+ENV PORT=8080
 ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore::UserWarning"
 ENV PYTHONUNBUFFERED=1
 ENV MPLCONFIGDIR=/tmp
@@ -43,4 +44,6 @@ ENV CUDA_VISIBLE_DEVICES=""
 
 # Run the application with memory optimization
 # python server.py
-CMD ["python", "-W", "ignore", "-O", "server.py"] 
+# CMD ["python", "-W", "ignore", "-O", "server.py"] 
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "server:app"] 
