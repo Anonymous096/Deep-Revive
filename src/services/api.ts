@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://0.0.0.0:8080";
+const API_BASE_URL =
+  process.env.API_BASE_URL ||
+  "https://deepimgref-794052010786.europe-west4.run.app";
 
 // Helper function to check if the API is available
 async function checkApiAvailability() {
