@@ -23,7 +23,8 @@ CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:3000",  # Local development
-            "https://*.vercel.app",    # Vercel deployment domains
+            "https://*.vercel.app",
+            "https://deep-revive.vercel.app/dashboard/revive",    # Vercel deployment domains
             os.getenv('FRONTEND_URL', '')  # Custom domain if configured
         ],
         "methods": ["GET", "POST", "OPTIONS"],
