@@ -5,7 +5,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "deepimgre-794052010786.europe-west4.run.app",
+        hostname: "deepimgref-794052010786.europe-west4.run.app",
         pathname: "/api/**",
       },
     ],
