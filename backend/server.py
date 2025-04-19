@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory, send_file, Response
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
@@ -121,6 +121,7 @@ def index():
         }
     })
 
+@cross_origin(origins="https://deep-revive.vercel.app", methods=["GET", "OPTIONS"])
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     """Health check endpoint"""
@@ -129,6 +130,7 @@ def health_check():
     logger.info("Health check requested")
     return jsonify({'status': 'healthy'})
 
+@cross_origin(origins="https://deep-revive.vercel.app", methods=["GET", "OPTIONS"])
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
     """Handle image upload"""
@@ -165,6 +167,7 @@ def upload_file():
         logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
+@cross_origin(origins="https://deep-revive.vercel.app", methods=["GET", "OPTIONS"])
 @app.route('/api/enhance', methods=['POST', 'OPTIONS'])
 def enhance_image():
     """Enhance image using GFPGAN"""
