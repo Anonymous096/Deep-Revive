@@ -14,9 +14,13 @@ from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
 import gc
 import logging
+import traceback
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
@@ -26,18 +30,32 @@ app = Flask(__name__)
 # Configure CORS to allow requests from Vercel frontend
 CORS(app, resources={
     r"/api/*": {
-        "origins": [
-            "http://localhost:3000",  # Local development
-            "https://*.vercel.app",   # All Vercel deployments
-            "https://deep-revive.vercel.app",  # Your specific Vercel domain
-            os.getenv('FRONTEND_URL', '')  # Custom domain if configured
-        ],
+        "origins": "*",  # Allow all origins for now to debug
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Disposition"],
         "supports_credentials": True
     }
 })
+
+@app.before_request
+def log_request_info():
+    logger.info('Headers: %s', request.headers)
+    logger.info('Body: %s', request.get_data())
+    logger.info('Origin: %s', request.headers.get('Origin'))
+    logger.info('Method: %s', request.method)
+    logger.info('URL: %s', request.url)
+    logger.info('Remote Address: %s', request.remote_addr)
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    logger.info('Response Headers: %s', response.headers)
+    logger.info('Response Status: %s', response.status)
+    return response
 
 # Configure folders
 UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
@@ -115,81 +133,102 @@ def health_check():
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
     """Handle image upload"""
-    logger.info(f"Upload request received from origin: {request.headers.get('Origin')}")
-    if 'file' not in request.files:
-        logger.error("No file part in request")
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        logger.error("No selected file")
-        return jsonify({'error': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = UPLOAD_FOLDER / filename
-        file.save(str(filepath))
-        logger.info(f"File saved successfully: {filename}")
-        
-        return jsonify({
-            'message': 'File uploaded successfully',
-            'filename': filename
-        })
-    
-    logger.error(f"File type not allowed: {file.filename}")
-    return jsonify({'error': 'File type not allowed'}), 400
+    try:
+        logger.info(f"Upload request received from origin: {request.headers.get('Origin')}")
+        if request.method == 'OPTIONS':
+            return '', 204
 
-@app.route('/api/enhance', methods=['POST'])
+        if 'file' not in request.files:
+            logger.error("No file part in request")
+            return jsonify({'error': 'No file part'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            logger.error("No selected file")
+            return jsonify({'error': 'No selected file'}), 400
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = UPLOAD_FOLDER / filename
+            file.save(str(filepath))
+            logger.info(f"File saved successfully: {filename}")
+            
+            return jsonify({
+                'message': 'File uploaded successfully',
+                'filename': filename
+            })
+        
+        logger.error(f"File type not allowed: {file.filename}")
+        return jsonify({'error': 'File type not allowed'}), 400
+    except Exception as e:
+        logger.error(f"Upload error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/enhance', methods=['POST', 'OPTIONS'])
 def enhance_image():
     """Enhance image using GFPGAN"""
-    logger.info("Enhance request received")
-    data = request.get_json()
-    filename = data.get('filename')
-    
-    if not filename:
-        logger.error("No filename provided")
-        return jsonify({'error': 'No filename provided'}), 400
-    
-    input_path = UPLOAD_FOLDER / filename
-    if not input_path.exists():
-        logger.error(f"File not found: {filename}")
-        return jsonify({'error': 'File not found'}), 404
-    
     try:
-        # Read image
-        img = cv2.imread(str(input_path), cv2.IMREAD_COLOR)
-        if img is None:
-            logger.error(f"Failed to read image: {filename}")
-            return jsonify({'error': 'Failed to read image'}), 400
+        if request.method == 'OPTIONS':
+            return '', 204
 
-        logger.info(f'Processing: {filename}')
+        logger.info("Enhance request received")
+        data = request.get_json()
+        if not data:
+            logger.error("No JSON data in request")
+            return jsonify({'error': 'No data provided'}), 400
+
+        filename = data.get('filename')
+        if not filename:
+            logger.error("No filename provided")
+            return jsonify({'error': 'No filename provided'}), 400
+        
+        input_path = UPLOAD_FOLDER / filename
+        if not input_path.exists():
+            logger.error(f"File not found: {filename}")
+            return jsonify({'error': 'File not found'}), 404
         
         try:
-            # Restore faces and background
-            cropped_faces, restored_faces, restored_img = restorer.enhance(
-                img,
-                has_aligned=False,
-                only_center_face=False,
-                paste_back=True
-            )
+            # Read image
+            img = cv2.imread(str(input_path), cv2.IMREAD_COLOR)
+            if img is None:
+                logger.error(f"Failed to read image: {filename}")
+                return jsonify({'error': 'Failed to read image'}), 400
 
-            # Save restored image
-            enhanced_filename = f'enhanced_{filename}'
-            save_path = ENHANCED_FOLDER / enhanced_filename
-            imwrite(restored_img, str(save_path))
-            logger.info(f'Enhancement complete: {enhanced_filename}')
+            logger.info(f'Processing: {filename}')
+            
+            try:
+                # Restore faces and background
+                cropped_faces, restored_faces, restored_img = restorer.enhance(
+                    img,
+                    has_aligned=False,
+                    only_center_face=False,
+                    paste_back=True
+                )
 
-            return jsonify({
-                'message': 'Enhancement complete',
-                'filename': enhanced_filename
-            })
+                # Save restored image
+                enhanced_filename = f'enhanced_{filename}'
+                save_path = ENHANCED_FOLDER / enhanced_filename
+                imwrite(restored_img, str(save_path))
+                logger.info(f'Enhancement complete: {enhanced_filename}')
+
+                return jsonify({
+                    'message': 'Enhancement complete',
+                    'filename': enhanced_filename
+                })
+
+            except Exception as e:
+                logger.error(f'GFPGAN inference error: {str(e)}')
+                logger.error(traceback.format_exc())
+                return jsonify({'error': f'Enhancement failed: {str(e)}'}), 500
 
         except Exception as e:
-            logger.error(f'GFPGAN inference error: {str(e)}')
-            return jsonify({'error': f'Enhancement failed: {str(e)}'}), 500
-
+            logger.error(f'Error processing image: {str(e)}')
+            logger.error(traceback.format_exc())
+            return jsonify({'error': str(e)}), 500
     except Exception as e:
-        logger.error(f'Error processing image: {str(e)}')
+        logger.error(f'General enhancement error: {str(e)}')
+        logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/preview/<filename>')
