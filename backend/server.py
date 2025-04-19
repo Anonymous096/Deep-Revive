@@ -15,6 +15,10 @@ from realesrgan import RealESRGANer
 import gc
 import logging
 import traceback
+import uuid
+from PIL import Image
+import io
+from enhance import enhance_image
 
 # Configure logging
 logging.basicConfig(
@@ -29,7 +33,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configure CORS to be more permissive
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.before_request
 def log_request_info():
@@ -42,13 +46,10 @@ def log_request_info():
 
 @app.after_request
 def after_request(response):
-    origin = request.headers.get('Origin')
-    if origin:
-        response.headers['Access-Control-Allow-Origin'] = origin
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-    response.headers['Access-Control-Max-Age'] = '600'
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    response.headers.add("Access-Control-Allow-Credentials", "false")
     logger.info('Response Headers: %s', response.headers)
     logger.info('Response Status: %s', response.status)
     return response
@@ -124,12 +125,7 @@ def index():
 def health_check():
     """Health check endpoint"""
     if request.method == 'OPTIONS':
-        response = Response()
-        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
-        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
+        return "", 204
     logger.info("Health check requested")
     return jsonify({'status': 'healthy'})
 
@@ -137,12 +133,7 @@ def health_check():
 def upload_file():
     """Handle image upload"""
     if request.method == 'OPTIONS':
-        response = Response()
-        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
-        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
+        return "", 204
 
     try:
         logger.info(f"Upload request received from origin: {request.headers.get('Origin')}")
@@ -157,13 +148,14 @@ def upload_file():
         
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            filepath = UPLOAD_FOLDER / filename
-            file.save(str(filepath))
-            logger.info(f"File saved successfully: {filename}")
+            unique_filename = f"{uuid.uuid4()}_{filename}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(filepath)
+            logger.info(f"File saved successfully: {unique_filename}")
             
             return jsonify({
                 'message': 'File uploaded successfully',
-                'filename': filename
+                'filename': unique_filename
             })
         
         logger.error(f"File type not allowed: {file.filename}")
@@ -177,12 +169,7 @@ def upload_file():
 def enhance_image():
     """Enhance image using GFPGAN"""
     if request.method == 'OPTIONS':
-        response = Response()
-        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
-        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
+        return "", 204
 
     try:
         logger.info("Enhance request received")
@@ -196,14 +183,14 @@ def enhance_image():
             logger.error("No filename provided")
             return jsonify({'error': 'No filename provided'}), 400
         
-        input_path = UPLOAD_FOLDER / filename
-        if not input_path.exists():
+        input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(input_path):
             logger.error(f"File not found: {filename}")
             return jsonify({'error': 'File not found'}), 404
         
         try:
             # Read image
-            img = cv2.imread(str(input_path), cv2.IMREAD_COLOR)
+            img = cv2.imread(input_path, cv2.IMREAD_COLOR)
             if img is None:
                 logger.error(f"Failed to read image: {filename}")
                 return jsonify({'error': 'Failed to read image'}), 400
@@ -221,8 +208,8 @@ def enhance_image():
 
                 # Save restored image
                 enhanced_filename = f'enhanced_{filename}'
-                save_path = ENHANCED_FOLDER / enhanced_filename
-                imwrite(restored_img, str(save_path))
+                enhanced_filepath = os.path.join(app.config['UPLOAD_FOLDER'], enhanced_filename)
+                imwrite(restored_img, enhanced_filepath)
                 logger.info(f'Enhancement complete: {enhanced_filename}')
 
                 return jsonify({
@@ -244,9 +231,12 @@ def enhance_image():
         logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/preview/<filename>')
+@app.route('/api/preview/<filename>', methods=['GET', 'OPTIONS'])
 def get_preview(filename):
     """Preview enhanced image"""
+    if request.method == 'OPTIONS':
+        return "", 204
+
     try:
         if filename.startswith('enhanced_'):
             filepath = ENHANCED_FOLDER / filename
