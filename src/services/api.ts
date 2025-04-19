@@ -10,7 +10,6 @@ async function checkApiAvailability() {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
       mode: "cors",
     });
     console.log(
@@ -66,7 +65,6 @@ export async function uploadImage(file: File): Promise<ApiResponse> {
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
         body: formData,
-        credentials: "include",
         mode: "cors",
       });
 
@@ -108,7 +106,6 @@ export async function enhanceImage(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ filename, options }),
-        credentials: "include",
         mode: "cors",
       });
 

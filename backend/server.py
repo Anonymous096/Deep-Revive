@@ -28,21 +28,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configure CORS
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "https://deep-revive.vercel.app",
-            "https://*.vercel.app",
-            "http://localhost:3000"
-        ],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Disposition"],
-        "supports_credentials": True,
-        "max_age": 600
-    }
-})
+# Configure CORS to be more permissive
+CORS(app)
 
 @app.before_request
 def log_request_info():
@@ -57,11 +44,11 @@ def log_request_info():
 def after_request(response):
     origin = request.headers.get('Origin')
     if origin:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-    response.headers.add('Access-Control-Max-Age', '600')
+        response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+    response.headers['Access-Control-Max-Age'] = '600'
     logger.info('Response Headers: %s', response.headers)
     logger.info('Response Status: %s', response.status)
     return response
@@ -137,18 +124,28 @@ def index():
 def health_check():
     """Health check endpoint"""
     if request.method == 'OPTIONS':
-        return '', 204
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
     logger.info("Health check requested")
     return jsonify({'status': 'healthy'})
 
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
     """Handle image upload"""
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
+
     try:
         logger.info(f"Upload request received from origin: {request.headers.get('Origin')}")
-        if request.method == 'OPTIONS':
-            return '', 204
-
         if 'file' not in request.files:
             logger.error("No file part in request")
             return jsonify({'error': 'No file part'}), 400
@@ -179,10 +176,15 @@ def upload_file():
 @app.route('/api/enhance', methods=['POST', 'OPTIONS'])
 def enhance_image():
     """Enhance image using GFPGAN"""
-    try:
-        if request.method == 'OPTIONS':
-            return '', 204
+    if request.method == 'OPTIONS':
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
 
+    try:
         logger.info("Enhance request received")
         data = request.get_json()
         if not data:
