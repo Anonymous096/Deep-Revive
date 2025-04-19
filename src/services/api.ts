@@ -1,3 +1,5 @@
+import { proxyRequest, proxyUpload } from "./proxy";
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://0.0.0.0:8080";
 
@@ -62,24 +64,8 @@ export async function uploadImage(file: File): Promise<ApiResponse> {
       const formData = new FormData();
       formData.append("file", file);
 
-      console.log("Sending upload request to:", `${API_BASE_URL}/api/upload`);
-      const response = await fetch(`${API_BASE_URL}/api/upload`, {
-        method: "POST",
-        body: formData,
-        mode: "cors",
-        credentials: "omit",
-      });
-
-      console.log("Upload response:", response.status, response.statusText);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Upload error details:", errorData);
-        throw new Error(errorData.error || "Failed to upload image");
-      }
-
-      const result = await response.json();
-      console.log("Upload successful:", result);
-      return result as ApiResponse;
+      console.log("Sending upload request to:", `/api/upload`);
+      return proxyUpload("/api/upload", formData);
     });
   } catch (error) {
     console.error("Upload error:", error);
@@ -101,27 +87,11 @@ export async function enhanceImage(
     }
 
     return await retryRequest(async () => {
-      console.log("Sending enhance request to:", `${API_BASE_URL}/api/enhance`);
-      const response = await fetch(`${API_BASE_URL}/api/enhance`, {
+      console.log("Sending enhance request to:", `/api/enhance`);
+      return proxyRequest("/api/enhance", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ filename, options }),
-        mode: "cors",
-        credentials: "omit",
       });
-
-      console.log("Enhance response:", response.status, response.statusText);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Enhance error details:", errorData);
-        throw new Error(errorData.error || "Failed to enhance image");
-      }
-
-      const result = await response.json();
-      console.log("Enhancement successful:", result);
-      return result as ApiResponse;
     });
   } catch (error) {
     console.error("Enhancement error:", error);
