@@ -7,12 +7,7 @@ import Link from "next/link";
 import { ChevronRight, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { FileUpload } from "@/components/file-upload";
-import {
-  uploadImage,
-  enhanceImage,
-  getPreviewUrl,
-  API_BASE_URL,
-} from "@/services/api";
+import { uploadImage, enhanceImage, getPreviewUrl } from "@/services/api";
 import Image from "next/image";
 
 export default function Revive() {
@@ -52,7 +47,7 @@ export default function Revive() {
 
     // Create download link
     const link = document.createElement("a");
-    link.href = `${API_BASE_URL}/api/download/${enhancedImage}`;
+    link.href = `http://0.0.0.0:8080/api/download/${enhancedImage}`;
     link.download = enhancedImage;
     document.body.appendChild(link);
     link.click();

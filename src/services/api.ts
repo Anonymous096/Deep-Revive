@@ -3,20 +3,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://0.0.0.0:8080";
 // Helper function to check if the API is available
 async function checkApiAvailability() {
   try {
-    console.log("Checking API availability at:", `${API_BASE_URL}/api/health`);
     const response = await fetch(`${API_BASE_URL}/api/health`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
-      mode: "cors",
-      credentials: "omit",
     });
-    console.log(
-      "API health check response:",
-      response.status,
-      response.statusText
-    );
     return response.ok;
   } catch (error) {
     console.error("API availability check failed:", error);
@@ -34,9 +26,8 @@ async function retryRequest<T>(
     try {
       return await fn();
     } catch (error) {
-      console.error(`Attempt ${i + 1} failed:`, error);
       if (i === maxRetries - 1) throw error;
-      console.log(`Retrying in ${delay}ms...`);
+      console.log(`Attempt ${i + 1} failed, retrying in ${delay}ms...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
@@ -49,7 +40,6 @@ interface ApiResponse {
 
 export async function uploadImage(file: File): Promise<ApiResponse> {
   try {
-    console.log("Starting image upload...");
     const isAvailable = await checkApiAvailability();
     if (!isAvailable) {
       throw new Error(
@@ -61,8 +51,17 @@ export async function uploadImage(file: File): Promise<ApiResponse> {
       const formData = new FormData();
       formData.append("file", file);
 
-      console.log("Sending upload request to:", `/api/upload`);
-      return proxyUpload("/api/upload", formData);
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to upload image");
+      }
+
+      return response.json() as Promise<ApiResponse>;
     });
   } catch (error) {
     console.error("Upload error:", error);
@@ -75,7 +74,6 @@ export async function enhanceImage(
   options = {}
 ): Promise<ApiResponse> {
   try {
-    console.log("Starting image enhancement...");
     const isAvailable = await checkApiAvailability();
     if (!isAvailable) {
       throw new Error(
@@ -84,11 +82,20 @@ export async function enhanceImage(
     }
 
     return await retryRequest(async () => {
-      console.log("Sending enhance request to:", `/api/enhance`);
-      return proxyRequest("/api/enhance", {
+      const response = await fetch(`${API_BASE_URL}/api/enhance`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ filename, options }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to enhance image");
+      }
+
+      return response.json() as Promise<ApiResponse>;
     });
   } catch (error) {
     console.error("Enhancement error:", error);
@@ -98,7 +105,5 @@ export async function enhanceImage(
 
 export function getPreviewUrl(filename: string) {
   // Add timestamp to prevent browser caching
-  const url = `${API_BASE_URL}/api/preview/${filename}?t=${Date.now()}`;
-  console.log("Generated preview URL:", url);
-  return url;
+  return `${API_BASE_URL}/api/preview/${filename}?t=${Date.now()}`;
 }
