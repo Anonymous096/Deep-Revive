@@ -13,6 +13,11 @@ from gfpgan import GFPGANer
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
 import gc
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -23,13 +28,14 @@ CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:3000",  # Local development
-            "https://*.vercel.app",
-            "https://deep-revive.vercel.app/dashboard/revive",    # Vercel deployment domains
+            "https://*.vercel.app",   # All Vercel deployments
+            "https://deep-revive.vercel.app",  # Your specific Vercel domain
             os.getenv('FRONTEND_URL', '')  # Custom domain if configured
         ],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "expose_headers": ["Content-Disposition"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Disposition"],
+        "supports_credentials": True
     }
 })
 
@@ -103,50 +109,60 @@ def index():
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
+    logger.info("Health check requested")
     return jsonify({'status': 'healthy'})
 
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
     """Handle image upload"""
+    logger.info(f"Upload request received from origin: {request.headers.get('Origin')}")
     if 'file' not in request.files:
+        logger.error("No file part in request")
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
     if file.filename == '':
+        logger.error("No selected file")
         return jsonify({'error': 'No selected file'}), 400
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         filepath = UPLOAD_FOLDER / filename
         file.save(str(filepath))
+        logger.info(f"File saved successfully: {filename}")
         
         return jsonify({
             'message': 'File uploaded successfully',
             'filename': filename
         })
     
+    logger.error(f"File type not allowed: {file.filename}")
     return jsonify({'error': 'File type not allowed'}), 400
 
 @app.route('/api/enhance', methods=['POST'])
 def enhance_image():
     """Enhance image using GFPGAN"""
+    logger.info("Enhance request received")
     data = request.get_json()
     filename = data.get('filename')
     
     if not filename:
+        logger.error("No filename provided")
         return jsonify({'error': 'No filename provided'}), 400
     
     input_path = UPLOAD_FOLDER / filename
     if not input_path.exists():
+        logger.error(f"File not found: {filename}")
         return jsonify({'error': 'File not found'}), 404
     
     try:
         # Read image
         img = cv2.imread(str(input_path), cv2.IMREAD_COLOR)
         if img is None:
+            logger.error(f"Failed to read image: {filename}")
             return jsonify({'error': 'Failed to read image'}), 400
 
-        print(f'Processing: {filename}')
+        logger.info(f'Processing: {filename}')
         
         try:
             # Restore faces and background
@@ -161,6 +177,7 @@ def enhance_image():
             enhanced_filename = f'enhanced_{filename}'
             save_path = ENHANCED_FOLDER / enhanced_filename
             imwrite(restored_img, str(save_path))
+            logger.info(f'Enhancement complete: {enhanced_filename}')
 
             return jsonify({
                 'message': 'Enhancement complete',
@@ -168,11 +185,11 @@ def enhance_image():
             })
 
         except Exception as e:
-            print(f'GFPGAN inference error: {str(e)}')
+            logger.error(f'GFPGAN inference error: {str(e)}')
             return jsonify({'error': f'Enhancement failed: {str(e)}'}), 500
 
     except Exception as e:
-        print(f'Error processing image: {str(e)}')
+        logger.error(f'Error processing image: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/preview/<filename>')
