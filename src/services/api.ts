@@ -11,6 +11,7 @@ async function checkApiAvailability() {
         "Content-Type": "application/json",
       },
       credentials: "include",
+      mode: "cors",
     });
     console.log(
       "API health check response:",
@@ -66,6 +67,7 @@ export async function uploadImage(file: File): Promise<ApiResponse> {
         method: "POST",
         body: formData,
         credentials: "include",
+        mode: "cors",
       });
 
       console.log("Upload response:", response.status, response.statusText);
@@ -107,6 +109,7 @@ export async function enhanceImage(
         },
         body: JSON.stringify({ filename, options }),
         credentials: "include",
+        mode: "cors",
       });
 
       console.log("Enhance response:", response.status, response.statusText);

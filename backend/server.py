@@ -27,14 +27,20 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
-# Configure CORS to allow requests from Vercel frontend
+
+# Configure CORS
 CORS(app, resources={
     r"/api/*": {
-        "origins": "*",  # Allow all origins for now to debug
+        "origins": [
+            "https://deep-revive.vercel.app",
+            "https://*.vercel.app",
+            "http://localhost:3000"
+        ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Disposition"],
-        "supports_credentials": True
+        "supports_credentials": True,
+        "max_age": 600
     }
 })
 
@@ -49,10 +55,13 @@ def log_request_info():
 
 @app.after_request
 def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin:
+        response.headers.add('Access-Control-Allow-Origin', origin)
     response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    response.headers.add('Access-Control-Max-Age', '600')
     logger.info('Response Headers: %s', response.headers)
     logger.info('Response Status: %s', response.status)
     return response
@@ -124,9 +133,11 @@ def index():
         }
     })
 
-@app.route('/api/health')
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     """Health check endpoint"""
+    if request.method == 'OPTIONS':
+        return '', 204
     logger.info("Health check requested")
     return jsonify({'status': 'healthy'})
 
