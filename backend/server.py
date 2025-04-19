@@ -105,7 +105,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy'})
 
-@app.route('/api/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
     """Handle image upload"""
     if 'file' not in request.files:
